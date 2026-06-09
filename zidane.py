@@ -2,8 +2,19 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from io import BytesIO
+import os
+from pathlib import Path
 
-st.set_page_config(page_title="Dashboard Impact Togo", page_icon="assets/logo_tdl.png", layout="wide", initial_sidebar_state="expanded")
+# === CHEMIN ROBUSTE POUR IMAGES ===
+BASE_DIR = Path(__file__).parent
+ASSETS_DIR = BASE_DIR / "assets"
+
+st.set_page_config(
+    page_title="Dashboard Impact Togo", 
+    page_icon=str(ASSETS_DIR / "logo_tdl.png"), 
+    layout="wide", 
+    initial_sidebar_state="expanded"
+)
 
 # --- CSS ULTRA PRO ---
 st.markdown("""
@@ -32,10 +43,10 @@ div[data-testid="stDataFrame"] {border-radius: 12px;overflow: hidden;box-shadow:
 </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER PREMIUM AVEC CHEMINS ASSETS ---
+# --- HEADER PREMIUM AVEC CHEMINS PATH ---
 col_logo, col_titre, col_bailleurs = st.columns([1.2, 4, 2])
 with col_logo:
-    st.image("assets/logo_tdl.png", width=150)
+    st.image(ASSETS_DIR / "logo_tdl.png", width=150)
 with col_titre:
     st.markdown("""
     <div class="header-premium">
@@ -46,11 +57,11 @@ with col_titre:
 with col_bailleurs:
     col_fao, col_pnud, col_ue = st.columns(3)
     with col_fao:
-        st.image("assets/fao.png", width=80)
+        st.image(ASSETS_DIR / "fao.png", width=80)
     with col_pnud:
-        st.image("assets/pnud.png", width=80)
+        st.image(ASSETS_DIR / "pnud.png", width=80)
     with col_ue:
-        st.image("assets/ue.png", width=80)
+        st.image(ASSETS_DIR / "ue.png", width=80)
 
 @st.cache_data
 def load_togo_data():
@@ -79,7 +90,7 @@ df = load_togo_data()
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image("assets/logo_tdl.png", use_container_width=True)
+    st.image(ASSETS_DIR / "logo_tdl.png", use_container_width=True)
     st.markdown("<br>", unsafe_allow_html=True)
     page = st.radio("Navigation", ["📊 Dashboard Impact", "📋 Base de données"])
     st.markdown("---")
@@ -218,4 +229,4 @@ st.markdown("""
 <br>
 """, unsafe_allow_html=True)
 
-st.caption("Dashboard Premium v3.0 | Tableau flexible par région | Design Inseed.tg")
+st.caption("Dashboard Premium v3.1 | Chemins robustes Path | Design Inseed.tg")
