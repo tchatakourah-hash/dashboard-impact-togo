@@ -2,18 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from io import BytesIO
-from pathlib import Path
 
-# --- CHEMINS PROJET ---
-BASE_DIR = Path(__file__).parent
-ASSETS_DIR = BASE_DIR / "assets"
-
-st.set_page_config(
-    page_title="Dashboard Impact Togo",
-    page_icon=ASSETS_DIR / "favicon.ico",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Dashboard Impact Togo", page_icon="favicon.ico", layout="wide", initial_sidebar_state="expanded")
 
 # --- CSS ULTRA PRO - STYLE INSEED.TG ---
 st.markdown("""
@@ -44,10 +34,8 @@ div[data-testid="stDataFrame"] {border-radius: 12px;overflow: hidden;box-shadow:
 
 # --- HEADER PREMIUM ---
 col_logo, col_titre, col_bailleurs = st.columns([1.2, 4, 2])
-
 with col_logo:
-    st.image(ASSETS_DIR / "logo_tdl.png", width=150)
-
+    st.image("logo_tdl.png", width=150)
 with col_titre:
     st.markdown("""
     <div class="header-premium">
@@ -55,15 +43,14 @@ with col_titre:
         <p>Suivi-Evaluation Agricole | Données 2023-2024 | Rapport Bailleur PNUD/FAO/UE</p>
     </div>
     """, unsafe_allow_html=True)
-
 with col_bailleurs:
     col_fao, col_pnud, col_ue = st.columns(3)
     with col_fao:
-        st.image(ASSETS_DIR / "fao.png", width=80)
+        st.image("fao.png", width=80)
     with col_pnud:
-        st.image(ASSETS_DIR / "pnud.png", width=80)
+        st.image("pnud.png", width=80)
     with col_ue:
-        st.image(ASSETS_DIR / "ue.png", width=80)
+        st.image("ue.png", width=80)
 
 @st.cache_data
 def load_togo_data():
@@ -92,11 +79,11 @@ df = load_togo_data()
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image(ASSETS_DIR / "logo_tdl.png", use_container_width=True)
+    st.image("logo_tdl.png", use_container_width=True)
     st.markdown("<br>", unsafe_allow_html=True)
     page = st.radio("Navigation", ["📊 Dashboard Impact", "📋 Base de données"])
     st.markdown("---")
-
+    
     if page == "📊 Dashboard Impact":
         st.title("Filtres S&E")
         zone = st.multiselect("🎯 Zone", df["Zone"].unique(), default=df["Zone"].unique())
@@ -107,46 +94,128 @@ df_filtered = df[df["Zone"].isin(zone) & df["Sexe"].isin(sexe)] if page == "📊
 
 # --- PAGE DASHBOARD ---
 if page == "📊 Dashboard Impact":
-
     st.subheader("KPI Impact Bailleur 2024")
-
+    
     col1, col2, col3 = st.columns(3)
-
     with col1:
         val = df[df.annee==2024].rendement_t_ha.mean()
         st.metric("Rendement moyen 2024", f"{val:.2f} t/ha", "vs 2023")
-
     with col2:
         val = df[df.annee==2024].adoption_technique.mean()*100
         st.metric("Taux d'adoption 2024", f"{val:.1f}%", "+12% vs 2023")
-
     with col3:
         rev_2024 = df[(df.annee==2024) & (df.Sexe=="Femme")].revenu_fcfa.mean()
         rev_2023 = df[(df.annee==2023) & (df.Sexe=="Femme")].revenu_fcfa.mean()
         delta = ((rev_2024 - rev_2023) / rev_2023) * 100
         st.metric("Revenu femmes 2024", f"{rev_2024:,.0f} FCFA".replace(",", " "), f"{delta:.1f}% vs 2023")
 
-# (le reste de ton code reste IDENTIQUE, aucune autre modification nécessaire)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.subheader("KPI Nationaux")
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        st.metric("Population totale", f"{df['Population_2024'].sum()/1000000:.2f} M hab")
+    with k2:
+        st.metric("Alphabétisation moy.", f"{df['Taux_Alphabétisation'].mean():.1f}%")
+    with k3:
+        st.metric("Accès Internet moy.", f"{df['Accès_Internet'].mean():.1f}%")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.subheader("Suivi Baseline vs Endline")
+    df_graph = df_filtered.groupby(["Zone", "annee"])["rendement_t_ha"].mean().reset_index()
+    
+    fig = px.bar(df_graph, x="Zone", y="rendement_t_ha", color="annee", barmode="group", 
+                 text_auto=".2f", color_discrete_map={2023: "#F87171", 2024: "#10B981"},
+                 title="Évolution du rendement par zone")
+    fig.update_layout(paper_bgcolor='white', plot_bgcolor='white', font_color='#1E293B', 
+                      height=400, showlegend=True)
+    fig.update_traces(textfont_size=14, textposition="outside")
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # ===== TABLEAU FLEXIBLE PAR RÉGION =====
+    st.subheader("Taux Alphabétisation par Région - Vue détaillée")
+    
+    df_table = df_filtered.groupby(["Région", "annee"]).agg({
+        "Taux_Alphabétisation": "mean",
+        "Population_2024": "mean",
+        "Accès_Internet": "mean",
+        "rendement_t_ha": "mean",
+        "ID_Parcelle": "count"
+    }).round(2).reset_index()
+    
+    df_table.columns = ["Région", "Année", "Alphabétisation %", "Population moy.", "Internet %", "Rendement t/ha", "Nb Parcelles"]
+    
+    if region_select != "Toutes":
+        df_table_display = df_table[df_table["Région"] == region_select]
+        st.info(f"📍 Affichage détaillé pour la région : **{region_select}**")
+    else:
+        df_table_display = df_table
+        st.info("📍 Affichage toutes régions. Sélectionne une région à gauche pour filtrer.")
+    
+    st.dataframe(
+        df_table_display,
+        use_container_width=True,
+        height=350,
+        column_config={
+            "Alphabétisation %": st.column_config.ProgressColumn("Alphabétisation %", min_value=0, max_value=100, format="%.1f%%"),
+            "Internet %": st.column_config.ProgressColumn("Internet %", min_value=0, max_value=100, format="%.1f%%"),
+            "Rendement t/ha": st.column_config.NumberColumn("Rendement t/ha", format="%.2f"),
+            "Population moy.": st.column_config.NumberColumn("Population moy.", format="%d"),
+        }
+    )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.subheader("Population vs Alphabétisation par Région")
+    df_scatter = df_filtered.groupby("Région")[["Population_2024", "Taux_Alphabétisation", "Accès_Internet"]].mean().reset_index()
+    fig_scatter = px.scatter(df_scatter, x="Population_2024", y="Taux_Alphabétisation", 
+                             size="Accès_Internet", color="Région", text="Région", size_max=60,
+                             color_discrete_sequence=px.colors.qualitative.Bold)
+    fig_scatter.update_traces(textposition='top center', textfont_size=12)
+    fig_scatter.update_layout(paper_bgcolor='white', plot_bgcolor='white', font_color='#1E293B', height=420)
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
+# --- PAGE BASE DE DONNÉES ---
 else:
     st.subheader("Base de données complète")
     st.info(f"📊 {len(df)} lignes | {len(df.columns)} colonnes | Données 2023-2024")
     st.dataframe(df, use_container_width=True, height=520)
-
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     @st.cache_data
     def to_excel(df):
         output = BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Base_Donnees')
         return output.getvalue()
-
+    
     excel_data = to_excel(df)
-
+    
     col_btn1, col_btn2 = st.columns([1,1])
     with col_btn1:
-        st.download_button("📥 Télécharger Excel", data=excel_data)
+        st.download_button("📥 Télécharger Excel", data=excel_data, file_name="base_donnees_togo_2024.xlsx")
     with col_btn2:
         csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Télécharger CSV", data=csv)
+        st.download_button("📥 Télécharger CSV", data=csv, file_name="base_donnees_togo_2024.csv")
+    
+    st.success("✅ Rapport prêt pour export bailleur PNUD/FAO")
 
-st.caption("Dashboard Premium v3.0 | Togo Data Lab")
+# --- SIGNATURE BATIANI VICKY ---
+st.markdown("""
+<br><br>
+<div style="text-align: center; padding: 25px; background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); border-radius: 16px; margin-top: 50px; box-shadow: 0 8px 30px rgba(30, 58, 138, 0.25);">
+    <p style="color: white; font-size: 20px; font-weight: 800; margin: 0; letter-spacing: 0.5px;">
+        👄 BATIANI Vicky avec une bouche pointue 👄
+    </p>
+    <p style="color: rgba(255,255,255,0.85); font-size: 13px; margin: 8px 0 0 0;">
+        Conçu avec ❤️ Zidane Data lab | 2024
+    </p>
+</div>
+<br>
+""", unsafe_allow_html=True)
+
+st.caption("Dashboard Premium v3.0 | Tableau flexible par région | Design Inseed.tg")
