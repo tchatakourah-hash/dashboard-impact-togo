@@ -209,10 +209,10 @@ st.markdown("""
 <br><br>
 <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); border-radius: 16px; margin-top: 50px; box-shadow: 0 8px 30px rgba(30, 58, 138, 0.25);">
     <p style="color: white; font-size: 20px; font-weight: 800; margin: 0; letter-spacing: 0.5px;">
-        👄 BATIANI Vicky avec une bouche pointue 👄
+        Evaluation d'impact de projet agro-alimentaire
     </p>
     <p style="color: rgba(255,255,255,0.85); font-size: 13px; margin: 8px 0 0 0;">
-        Conçu avec ❤️ Zidane Data lab | 2024
+        Conçu avec TCHATAKOURA Data lab | 2026
     </p>
 </div>
 <br>
